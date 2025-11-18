@@ -2,5 +2,12 @@
 name = "doom-clone"
 version = "0.1.0"
 description = "Add your description here"
-requires-python = ">=3.13"
-dependencies = []
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "numpy>=1.24.0",
+    "pillow>=10.0.0",
+    "pygame>=2.5.0",
+    "pyopengl>=3.1.0",
+    "pyopengl-accelerate>=3.1.0",
+]
