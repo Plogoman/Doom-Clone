@@ -1,4 +1,8 @@
-"""Main game engine and game loop - truly force white Game Over screen (SDL path)."""
+"""Main game engine and game loop.
+
+Fixes Game Over screen rendering to properly display over the OpenGL backbuffer
+and adds a clean restart request flow handled by the Engine loop.
+"""
 import pygame
 from pygame.locals import *
 from core.window import Window
@@ -22,6 +26,8 @@ class Engine:
         self.entities = []
         self.hud = None
         self.game_over_screen = None
+        # Internal flag to request a full game restart (set on R when dead)
+        self._restart_requested = False
     def run(self):
         self.running = True
         while self.running:
@@ -42,7 +48,12 @@ class Engine:
             if event.type == QUIT:
                 self.running = False
             elif event.type == KEYDOWN:
-                if event.key == K_ESCAPE:
+                # Allow restart with a single R press when player is dead
+                if event.key == K_r and self.player and self.player.health <= 0:
+                    # Signal to upper layer (game.py) that we want to restart
+                    self._restart_requested = True
+                    self.running = False
+                elif event.key == K_ESCAPE:
                     self.running = False
                 elif self.input_manager:
                     self.input_manager.on_key_down(event.key)
@@ -75,13 +86,17 @@ class Engine:
             self.physics_system.update(self.delta_time)
     def _render(self):
         self.window.clear()
-        # Force white Game Over screen by using SDL display ONLY and disabling all OpenGL renders
+        # Render Game Over overlay as an OpenGL HUD quad so it shows up reliably
         if self.player and self.player.health <= 0 and self.game_over_screen:
-            surface = pygame.display.get_surface()
-            if surface is not None:
-                surface.fill((255, 255, 255))
-                self.game_over_screen.render(surface, kills=getattr(self.player, 'kills', 0), restart_hint=True)
-                pygame.display.flip()  # Immediately show the result, override OpenGL swaps
+            if self.renderer:
+                # Create a full-screen white surface with text via the UI system
+                go_surface = self.game_over_screen.render(
+                    None,
+                    kills=getattr(self.player, 'kills', 0),
+                    restart_hint=True
+                )
+                self.renderer.render_hud_overlay(go_surface)
+                self.window.swap_buffers()
             return
         if self.renderer and self.level:
             self.renderer.render(self.level, self.player, self.entities)

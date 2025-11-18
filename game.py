@@ -82,38 +82,42 @@ class DoomCloneGame:
         print("  Left Click - Fire weapon")
         print("  Space - Jump")
         print("  1-7 - Switch weapons")
+        print("  R - Restart after death")
         print("  ESC - Quit")
         print()
+
+        # Hook into engine update to perform game-specific logic (weapon hits, collisions)
         original_update = self.engine._update
-        game_ref = self
         def custom_update():
+            # Run engine's normal update (handles input, player, AI, physics while alive)
             original_update()
-            # If game is over, just render the screen and handle simple input
-            if self.player.health <= 0:
-                self.is_game_over = True
-                # Draw game over overlay
-                surface = pygame.display.get_surface()
-                self.game_over_screen.render(surface, kills=self.player.kills)
-                # Handle restart/quit input
-                for event in pygame.event.get():
-                    if event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_r:
-                            print("Restart requested!")
-                            # FULLY RESTART GAME STATE
-                            game_ref._build_game_state()
-                            game_ref.run() # Restart the game loop recursively
-                            return
-                        elif event.key == pygame.K_ESCAPE:
-                            print("Quit requested")
-                            pygame.quit()
-                            exit()
+            # Only run extra logic if player is alive
+            if not self.player or self.player.health <= 0:
                 return
-            self.physics_system.update(self.engine.delta_time)
-            self.ai_controller.update(self.engine.delta_time, self.player)
+            # Process weapon hit scans and collisions
             self._handle_weapon_fire()
             self._handle_collisions()
         self.engine._update = custom_update
-        self.engine.run()
+
+        # Main loop with restart handling: run engine until exit or restart requested
+        while True:
+            self.engine.run()
+            # If a restart was requested (via pressing R when dead), rebuild state and continue
+            if getattr(self.engine, '_restart_requested', False):
+                print("Restart requested! Rebuilding game state...")
+                self._build_game_state()
+                # Reinstall custom_update on new engine instance
+                original_update = self.engine._update
+                def custom_update():
+                    original_update()
+                    if not self.player or self.player.health <= 0:
+                        return
+                    self._handle_weapon_fire()
+                    self._handle_collisions()
+                self.engine._update = custom_update
+                continue
+            # Otherwise, quit the game loop
+            break
     def _handle_weapon_fire(self):
         if not hasattr(self.player, '_weapon_fire_data'):
             return
