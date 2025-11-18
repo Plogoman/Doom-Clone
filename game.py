@@ -91,6 +91,11 @@ class DoomCloneGame:
         def custom_update():
             # Run engine's normal update (handles input, player, AI, physics while alive)
             original_update()
+            # Handle in-place respawn request (R pressed while dead)
+            if getattr(self.engine, '_restart_requested', False):
+                self._respawn_in_place()
+                # Skip further processing this frame
+                return
             # Only run extra logic if player is alive
             if not self.player or self.player.health <= 0:
                 return
@@ -104,20 +109,57 @@ class DoomCloneGame:
             self.engine.run()
             # If a restart was requested (via pressing R when dead), rebuild state and continue
             if getattr(self.engine, '_restart_requested', False):
-                print("Restart requested! Rebuilding game state...")
-                self._build_game_state()
-                # Reinstall custom_update on new engine instance
-                original_update = self.engine._update
-                def custom_update():
-                    original_update()
-                    if not self.player or self.player.health <= 0:
-                        return
-                    self._handle_weapon_fire()
-                    self._handle_collisions()
-                self.engine._update = custom_update
+                # With in-place respawn, Engine continues running; this path should rarely trigger.
+                # Clear the flag just in case to avoid a tight loop.
+                self.engine._restart_requested = False
                 continue
             # Otherwise, quit the game loop
             break
+    def _respawn_in_place(self):
+        """Respawn the player and rebuild gameplay state without closing the window.
+
+        Keeps the existing Engine, Window, Renderer, HUD, and AudioManager alive.
+        Replaces level, player, input manager, physics, AI, and entities list.
+        """
+        # Create new level and player at spawn
+        self.level = LevelLoader.create_test_level()
+        spawn_pos = self.level.get_spawn_position()
+        self.player = Player(spawn_pos)
+        self.player.camera.yaw = -np.pi / 2
+        self.player.camera._update_vectors()
+
+        # Equip default weapon
+        pistol = Pistol()
+        self.player.equip_weapon(pistol, 1)
+
+        # Fresh gameplay systems
+        self.entities = []
+        self.input_manager = InputManager(self.player)
+        self.physics_system = PhysicsSystem(self.level)
+        self.ai_controller = AIController(self.level)
+
+        # Spawn test content
+        self._spawn_test_monsters()
+        self._spawn_test_items()
+
+        # Hook player into physics
+        self.physics_system.add_entity(self.player)
+
+        # Rewire engine references to new gameplay state
+        self.engine.input_manager = self.input_manager
+        self.engine.ai_controller = self.ai_controller
+        self.engine.physics_system = self.physics_system
+        self.engine.level = self.level
+        self.engine.player = self.player
+        self.engine.entities = self.entities
+
+        # Clear restart flag so we don't respawn again
+        self.engine._restart_requested = False
+
+        # Reset local flags
+        self.is_game_over = False
+
+        print("↻ Respawned in place. Good luck!")
     def _handle_weapon_fire(self):
         if not hasattr(self.player, '_weapon_fire_data'):
             return
