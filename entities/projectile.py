@@ -67,7 +67,7 @@ class Fireball(Projectile):
             direction: Direction vector
             owner: Entity that fired
         """
-        super().__init__(position, direction, speed=10.0, damage=8, owner=owner)
+        super().__init__(position, direction, speed=10.0, damage=3, owner=owner)
 
         self.sprite_name = "projectile_fireball"
         self.sprite_size = np.array([0.8, 0.8], dtype=np.float32)  # Larger for visibility

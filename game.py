@@ -35,6 +35,11 @@ class DoomCloneGame:
             'projectile_fireball', (255, 180, 0, 255)  # Very bright orange
         )
 
+        # Create ammo box texture (gold/yellow for bullets)
+        self.renderer.texture_manager.create_solid_color_texture(
+            'item_ammo_bullets', (255, 220, 0, 255)  # Gold/yellow for bullet ammo
+        )
+
         # Create floor and ceiling textures
         self.renderer.texture_manager.create_solid_color_texture(
             'floor', (80, 80, 80, 255)  # Dark gray floor
@@ -72,6 +77,9 @@ class DoomCloneGame:
         # Spawn test monsters
         self._spawn_test_monsters()
 
+        # Spawn test items
+        self._spawn_test_items()
+
         # Connect systems to engine
         self.engine.renderer = self.renderer
         self.engine.input_manager = self.input_manager
@@ -106,6 +114,23 @@ class DoomCloneGame:
         self.entities.append(demon)
         self.ai_controller.add_monster(demon)
         self.physics_system.add_entity(demon)
+
+    def _spawn_test_items(self):
+        """Spawn test items in level.
+
+        Room is 10x10 from -5 to +5 on X and Z axes.
+        Player spawns at (0, 0.6, 0) facing north (-Z).
+        """
+        from entities.item import AmmoBox
+
+        # Spawn bullet ammo box near center (easy to see and reach)
+        ammo_box = AmmoBox(
+            position=np.array([2.0, 0.0, -2.0], dtype=np.float32),
+            ammo_type='bullets',
+            amount=20  # Gives 20 bullets
+        )
+        self.entities.append(ammo_box)
+        print(f"  💰 Spawned bullet ammo box at position (2.0, 0.0, -2.0)")
 
     def run(self):
         """Start the game."""
@@ -242,3 +267,14 @@ class DoomCloneGame:
                                 if CollisionSystem.check_aabb_collision(proj_aabb, other_aabb):
                                     entity.on_hit(other)
                                     break
+
+        # Item pickup detection
+        from entities.item import Item
+        for entity in self.entities[:]:
+            if isinstance(entity, Item) and entity.active:
+                # Check distance to player
+                distance = np.linalg.norm(entity.position - self.player.position)
+                if distance < entity.pickup_range:
+                    # Try to pick up item
+                    if entity.on_pickup(self.player):
+                        print(f"  ✓ Picked up {entity.__class__.__name__}!")

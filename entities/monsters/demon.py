@@ -16,9 +16,9 @@ class Demon(Monster):
         super().__init__(position)
 
         # Stats
-        self.health = 60
-        self.max_health = 60
-        self.damage = 15
+        self.health = 100
+        self.max_health = 100
+        self.damage = 5
         self.move_speed = 3.0  # Slower, more manageable
 
         # Combat - Melee behavior

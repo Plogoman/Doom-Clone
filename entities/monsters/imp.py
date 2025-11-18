@@ -17,9 +17,9 @@ class Imp(Monster):
         super().__init__(position)
 
         # Stats
-        self.health = 30
-        self.max_health = 30
-        self.damage = 8
+        self.health = 60
+        self.max_health = 60
+        self.damage = 3
         self.move_speed = 2.5
 
         # Combat - Ranged behavior
