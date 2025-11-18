@@ -1,11 +1,11 @@
-"""Main game engine and game loop - now supports game over UI rendering."""
+"""Main game engine and game loop - clear screen before Game Over UI."""
 import pygame
 from pygame.locals import *
 from core.window import Window
 from core.config import FPS_TARGET, SHOW_FPS
 
 class Engine:
-    """Main game engine managing game loop and systems with Game Over UI support."""
+    """Main game engine managing game loop and systems with proper Game Over screen clearing."""
 
     def __init__(self):
         self.window = Window()
@@ -85,6 +85,9 @@ class Engine:
         # Show only GAME OVER overlay if dead
         if self.player and self.player.health <= 0 and self.game_over_screen:
             surface = pygame.display.get_surface()
+            # Fill screen solid black
+            surface.fill((0, 0, 0))
+            # Now render game over message
             self.game_over_screen.render(surface, kills=getattr(self.player, 'kills', 0), restart_hint=True)
             self.window.swap_buffers()
             return
