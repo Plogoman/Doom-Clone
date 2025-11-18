@@ -3,7 +3,6 @@ from OpenGL.GL import *
 import pygame
 import numpy as np
 
-
 class HUDRenderer:
     """Renders pygame surfaces as OpenGL texture overlays."""
 

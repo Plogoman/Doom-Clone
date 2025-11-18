@@ -53,7 +53,7 @@ class Window:
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-        glClearColor(0.1, 0.1, 0.1, 1.0)
+        glClearColor(0.2, 0.4, 0.8, 1.0)  # Sky blue background
 
         # Set viewport
         glViewport(0, 0, self.width, self.height)

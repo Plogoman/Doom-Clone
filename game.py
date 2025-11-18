@@ -40,6 +40,11 @@ class DoomCloneGame:
             'item_ammo_bullets', (255, 220, 0, 255)  # Gold/yellow for bullet ammo
         )
 
+        # Create wall texture (bright for contrast with floor)
+        self.renderer.texture_manager.create_solid_color_texture(
+            'wall', (200, 200, 200, 255)  # Light gray/white walls
+        )
+
         # Create floor and ceiling textures
         self.renderer.texture_manager.create_solid_color_texture(
             'floor', (80, 80, 80, 255)  # Dark gray floor
@@ -100,16 +105,16 @@ class DoomCloneGame:
         Room is 10x10 from -5 to +5 on X and Z axes.
         Player spawns at (0, 0.6, 0) facing north (-Z).
         """
-        # Spawn an Imp (back right corner, away from player)
-        imp = Imp(position=np.array([3.5, 0.0, 3.5], dtype=np.float32))
+        # Spawn an Imp (back right corner, away from player, above floor)
+        imp = Imp(position=np.array([3.5, 0.8, 3.5], dtype=np.float32))
         imp.set_target(self.player)
         imp.entity_list = self.entities  # Give Imp access to spawn projectiles
         self.entities.append(imp)
         self.ai_controller.add_monster(imp)
         self.physics_system.add_entity(imp)
 
-        # Spawn a Demon (back left corner, away from player)
-        demon = Demon(position=np.array([-3.5, 0.0, 3.5], dtype=np.float32))
+        # Spawn a Demon (back left corner, away from player, above floor)
+        demon = Demon(position=np.array([-3.5, 0.7, 3.5], dtype=np.float32))
         demon.set_target(self.player)
         self.entities.append(demon)
         self.ai_controller.add_monster(demon)
@@ -123,14 +128,14 @@ class DoomCloneGame:
         """
         from entities.item import AmmoBox
 
-        # Spawn bullet ammo box near center (easy to see and reach)
+        # Spawn bullet ammo box near center (easy to see and reach, above floor)
         ammo_box = AmmoBox(
-            position=np.array([2.0, 0.0, -2.0], dtype=np.float32),
+            position=np.array([2.0, 0.3, -2.0], dtype=np.float32),
             ammo_type='bullets',
             amount=20  # Gives 20 bullets
         )
         self.entities.append(ammo_box)
-        print(f"  💰 Spawned bullet ammo box at position (2.0, 0.0, -2.0)")
+        print(f"  💰 Spawned bullet ammo box at position (2.0, 0.3, -2.0)")
 
     def run(self):
         """Start the game."""

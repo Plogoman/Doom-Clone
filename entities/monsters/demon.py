@@ -3,7 +3,6 @@ from entities.monster import Monster
 from physics.aabb import AABB
 import numpy as np
 
-
 class Demon(Monster):
     """Demon/Pinky - fast melee attacker."""
 
