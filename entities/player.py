@@ -142,11 +142,12 @@ class Player(Entity):
         if self.physics.on_ground:
             self.physics.velocity[1] = JUMP_VELOCITY
 
-    def take_damage(self, amount):
-        """Take damage.
+    def take_damage(self, amount, attacker=None):
+        """Take damage (accepts attacker for compatibility with monsters/projectiles).
 
         Args:
             amount: Damage amount
+            attacker: Entity that dealt damage (optional)
         """
         # Trigger damage flash effect
         self.damage_flash = 0.3  # Flash for 0.3 seconds
