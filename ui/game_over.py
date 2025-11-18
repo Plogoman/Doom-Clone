@@ -13,6 +13,9 @@ class GameOverScreen:
         pygame.font.init()
         self.font_big = pygame.font.Font(None, 90)
         self.font_small = pygame.font.Font(None, 45)
+        # Simple cache so we don't re-render identical static frames every tick
+        self._cache_surface = None
+        self._cache_params = None
 
     def render(self, surface=None, kills=0, restart_hint=True):
         """Render the game over screen to an offscreen surface.
@@ -24,6 +27,11 @@ class GameOverScreen:
         Returns:
             Pygame Surface with the Game Over screen drawn on it.
         """
+        # Return cached surface if parameters haven't changed
+        cache_key = (self.width, self.height, kills, bool(restart_hint))
+        if self._cache_surface is not None and self._cache_params == cache_key and surface is None:
+            return self._cache_surface
+
         # Create surface if not provided; ensure opaque background
         if surface is None:
             surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
@@ -46,5 +54,10 @@ class GameOverScreen:
             hint_text = self.font_small.render("Press [R] to Restart or [ESC] to Quit", True, (120, 120, 120))
             hint_rect = hint_text.get_rect(center=(self.width // 2, self.height // 2 + 80))
             surface.blit(hint_text, hint_rect)
+
+        # Update cache only when we created the surface ourselves
+        if surface is not None and (self._cache_params != cache_key):
+            self._cache_surface = surface.copy()
+            self._cache_params = cache_key
 
         return surface
