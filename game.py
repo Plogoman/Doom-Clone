@@ -1,4 +1,4 @@
-"""Main game class integrating all systems with Game Over UI."""
+"""Main game class integrating all systems, now supporting full restart after Game Over."""
 from core import Engine
 from renderer import Renderer
 from entities import Player
@@ -15,13 +15,14 @@ import numpy as np
 import pygame
 
 class DoomCloneGame:
-    """Main game class with Game Over screen."""
     def __init__(self):
+        self._build_game_state()
+
+    def _build_game_state(self):
         self.engine = Engine()
         self.renderer = Renderer()
         self.renderer.window = self.engine.window
         self.audio_manager = AudioManager()
-
         self.renderer.texture_manager.create_solid_color_texture('monster_imp', (200, 50, 50, 255))
         self.renderer.texture_manager.create_solid_color_texture('monster_demon', (220, 120, 180, 255))
         self.renderer.texture_manager.create_solid_color_texture('projectile_fireball', (255, 180, 0, 255))
@@ -29,10 +30,8 @@ class DoomCloneGame:
         self.renderer.texture_manager.create_solid_color_texture('wall', (200, 200, 200, 255))
         self.renderer.texture_manager.create_solid_color_texture('floor', (80, 80, 80, 255))
         self.renderer.texture_manager.create_solid_color_texture('ceiling', (120, 120, 120, 255))
-
         self.hud = HUD(self.engine.window.width, self.engine.window.height)
         self.game_over_screen = GameOverScreen(self.engine.window.width, self.engine.window.height)
-
         self.level = LevelLoader.create_test_level()
         spawn_pos = self.level.get_spawn_position()
         self.player = Player(spawn_pos)
@@ -55,10 +54,9 @@ class DoomCloneGame:
         self.engine.player = self.player
         self.engine.entities = self.entities
         self.engine.hud = self.hud
+        self.engine.game_over_screen = self.game_over_screen
         self.physics_system.add_entity(self.player)
-        # For game over state
         self.is_game_over = False
-
     def _spawn_test_monsters(self):
         imp = Imp(position=np.array([3.5, 0.8, 3.5], dtype=np.float32))
         imp.set_target(self.player)
@@ -71,13 +69,11 @@ class DoomCloneGame:
         self.entities.append(demon)
         self.ai_controller.add_monster(demon)
         self.physics_system.add_entity(demon)
-
     def _spawn_test_items(self):
         from entities.item import AmmoBox
         ammo_box = AmmoBox(position=np.array([2.0, 0.3, -2.0], dtype=np.float32), ammo_type='bullets', amount=20)
         self.entities.append(ammo_box)
         print(f"  💰 Spawned bullet ammo box at position (2.0, 0.3, -2.0)")
-
     def run(self):
         print("Starting Doom Clone...")
         print("Controls:")
@@ -89,6 +85,7 @@ class DoomCloneGame:
         print("  ESC - Quit")
         print()
         original_update = self.engine._update
+        game_ref = self
         def custom_update():
             original_update()
             # If game is over, just render the screen and handle simple input
@@ -97,24 +94,26 @@ class DoomCloneGame:
                 # Draw game over overlay
                 surface = pygame.display.get_surface()
                 self.game_over_screen.render(surface, kills=self.player.kills)
-                # Optionally, handle restart/quit input
+                # Handle restart/quit input
                 for event in pygame.event.get():
                     if event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_r:
-                            print("Restart requested (not implemented)")
-                            # TODO: reset game state/respawn
+                            print("Restart requested!")
+                            # FULLY RESTART GAME STATE
+                            game_ref._build_game_state()
+                            game_ref.run() # Restart the game loop recursively
+                            return
                         elif event.key == pygame.K_ESCAPE:
                             print("Quit requested")
                             pygame.quit()
                             exit()
-                return # Skip updating gameplay
+                return
             self.physics_system.update(self.engine.delta_time)
             self.ai_controller.update(self.engine.delta_time, self.player)
             self._handle_weapon_fire()
             self._handle_collisions()
         self.engine._update = custom_update
         self.engine.run()
-
     def _handle_weapon_fire(self):
         if not hasattr(self.player, '_weapon_fire_data'):
             return
@@ -142,7 +141,6 @@ class DoomCloneGame:
                 if was_alive and closest_hit.health <= 0:
                     self.player.kills += 1
                     print(f"  💀 {closest_hit.__class__.__name__} killed! Total kills: {self.player.kills}")
-
     def _handle_collisions(self):
         if not self.level or not self.player:
             return
