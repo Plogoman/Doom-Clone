@@ -1,11 +1,11 @@
-"""Main game engine and game loop - clear screen before Game Over UI."""
+"""Main game engine and game loop - robust surface fetch for Game Over UI."""
 import pygame
 from pygame.locals import *
 from core.window import Window
 from core.config import FPS_TARGET, SHOW_FPS
 
 class Engine:
-    """Main game engine managing game loop and systems with proper Game Over screen clearing."""
+    """Main game engine managing game loop and systems with defensive Game Over screen handling."""
 
     def __init__(self):
         self.window = Window()
@@ -13,7 +13,6 @@ class Engine:
         self.delta_time = 0.0
         self.fps_update_timer = 0.0
         self.fps_update_interval = 0.5
-        # Systems
         self.renderer = None
         self.input_manager = None
         self.audio_manager = None
@@ -23,7 +22,7 @@ class Engine:
         self.player = None
         self.entities = []
         self.hud = None
-        self.game_over_screen = None  # Expect set by game
+        self.game_over_screen = None
 
     def run(self):
         self.running = True
@@ -66,7 +65,6 @@ class Engine:
     def _update(self):
         if self.input_manager:
             self.input_manager.update(self.delta_time)
-        # Halt game logic if player is dead
         if self.player and self.player.health <= 0:
             return
         if self.ai_controller:
@@ -82,16 +80,14 @@ class Engine:
 
     def _render(self):
         self.window.clear()
-        # Show only GAME OVER overlay if dead
+        # Defensive fetch for the main display surface
         if self.player and self.player.health <= 0 and self.game_over_screen:
             surface = pygame.display.get_surface()
-            # Fill screen solid black
-            surface.fill((0, 0, 0))
-            # Now render game over message
-            self.game_over_screen.render(surface, kills=getattr(self.player, 'kills', 0), restart_hint=True)
+            if surface is not None:
+                surface.fill((255, 255, 255))  # White background as requested
+                self.game_over_screen.render(surface, kills=getattr(self.player, 'kills', 0), restart_hint=True)
             self.window.swap_buffers()
             return
-        # Else regular render
         if self.renderer and self.level:
             self.renderer.render(self.level, self.player, self.entities)
         if self.hud and self.player:
