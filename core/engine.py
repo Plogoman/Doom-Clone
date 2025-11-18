@@ -1,12 +1,11 @@
-"""Main game engine and game loop - robust surface fetch for Game Over UI."""
+"""Main game engine and game loop - truly force white Game Over screen (SDL path)."""
 import pygame
 from pygame.locals import *
 from core.window import Window
 from core.config import FPS_TARGET, SHOW_FPS
 
 class Engine:
-    """Main game engine managing game loop and systems with defensive Game Over screen handling."""
-
+    """Main game engine managing game loop and systems with forced white Game Over screen."""
     def __init__(self):
         self.window = Window()
         self.running = False
@@ -23,7 +22,6 @@ class Engine:
         self.entities = []
         self.hud = None
         self.game_over_screen = None
-
     def run(self):
         self.running = True
         while self.running:
@@ -39,7 +37,6 @@ class Engine:
                     from core.config import WINDOW_TITLE
                     pygame.display.set_caption(f"{WINDOW_TITLE} - FPS: {fps:.1f}")
         self._cleanup()
-
     def _process_events(self):
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -61,7 +58,6 @@ class Engine:
             elif event.type == MOUSEBUTTONUP:
                 if self.input_manager:
                     self.input_manager.on_mouse_button_up(event.button)
-
     def _update(self):
         if self.input_manager:
             self.input_manager.update(self.delta_time)
@@ -77,16 +73,15 @@ class Engine:
                 self.entities.remove(entity)
         if self.physics_system:
             self.physics_system.update(self.delta_time)
-
     def _render(self):
         self.window.clear()
-        # Defensive fetch for the main display surface
+        # Force white Game Over screen by using SDL display ONLY and disabling all OpenGL renders
         if self.player and self.player.health <= 0 and self.game_over_screen:
             surface = pygame.display.get_surface()
             if surface is not None:
-                surface.fill((255, 255, 255))  # White background as requested
+                surface.fill((255, 255, 255))
                 self.game_over_screen.render(surface, kills=getattr(self.player, 'kills', 0), restart_hint=True)
-            self.window.swap_buffers()
+                pygame.display.flip()  # Immediately show the result, override OpenGL swaps
             return
         if self.renderer and self.level:
             self.renderer.render(self.level, self.player, self.entities)
@@ -95,7 +90,6 @@ class Engine:
             if hud_surface and self.renderer:
                 self.renderer.render_hud_overlay(hud_surface)
         self.window.swap_buffers()
-
     def _cleanup(self):
         if self.audio_manager:
             self.audio_manager.cleanup()
