@@ -51,8 +51,8 @@ class Engine:
                 # Allow restart with a single R press when player is dead
                 if event.key == K_r and self.player and self.player.health <= 0:
                     # Signal to upper layer (game.py) that we want to restart
+                    # Do NOT stop the engine loop; game will respawn in-place
                     self._restart_requested = True
-                    self.running = False
                 elif event.key == K_ESCAPE:
                     self.running = False
                 elif self.input_manager:
